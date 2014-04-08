@@ -22,7 +22,7 @@ function WalletWatcher(arg_currency, arg_wallet_addr) {
     }
 
     function get_balance() {
-        CryptoHandlers[currency]();
+        CryptoHandlers[self.currency]();
     }
 
     function bind_event(event, handler) {
@@ -49,29 +49,42 @@ function WalletWatcher(arg_currency, arg_wallet_addr) {
         set_wallet_type(currency)
     }
 
+    function xhr_total_parser(total) {
+        var currency = {
+            pre: 0,
+            post: 00000000
+        };
+        // the last 8 chars are the decimal points
+        if(total.length > 8) {
+            var offset = total.length - 8;
+            currency.pre = parseInt(total.substr(0, offset));
+            currency.post = parseInt(total.substr(offset));
+        }
+        else {
+            currency.post = total;
+        }
+    
+        return currency;
+    }
+
 
     /** Various Wallet Handlers **/
     CryptoHandlers.BTC = function() {
         $.ajax({
             url: 'https://blockchain.info/q/getreceivedbyaddress/' + self.wallet_addr,
             success: function(total) {
-                var currency = {
-                    pre: 0,
-                    post: 00000000
-                };
-                // the last 8 chars are the decimal points
-                if(total.length > 8) {
-                    var offset = total.length - 8;
-                    currency.pre = parseInt(total.substr(0, offset));
-                    currency.post = parseInt(total.substr(offset));
-                }
-                else {
-                    currency.post = total;
-                }
-
-                trigger('balance', currency);
+                trigger('balance', xhr_total_parser(total));
             }
-        })
+        });
+    }
+
+    CryptoHandlers.DOGE = function() {
+        $.ajax({
+            url: 'http://dogechain.info/chain/Dogecoin/q/addressbalance/' + self.wallet_addr,
+            success: function(total) {
+                trigger('balance', xhr_total_parser(total));
+            }
+        });
     }
 
     construct(arg_currency, arg_wallet_addr);
