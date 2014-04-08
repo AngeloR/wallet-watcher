@@ -52,17 +52,18 @@ function WalletWatcher(arg_currency, arg_wallet_addr) {
     function xhr_total_parser(total) {
         var currency = {
             pre: 0,
-            post: 00000000
+            post: '00000000'
         };
         // the last 8 chars are the decimal points
         if(total.length > 8) {
-            var offset = total.length - 8;
-            currency.pre = parseInt(total.substr(0, offset));
-            currency.post = parseInt(total.substr(offset));
+            var d = total.split('.');
+            currency.pre = parseInt(d[0]);
+            currency.post = parseInt((d[1] === undefined)?'0000':d[1]);
         }
         else {
             currency.post = total;
         }
+
     
         return currency;
     }
@@ -71,8 +72,13 @@ function WalletWatcher(arg_currency, arg_wallet_addr) {
     /** Various Wallet Handlers **/
     CryptoHandlers.BTC = function() {
         $.ajax({
-            url: 'https://blockchain.info/q/getreceivedbyaddress/' + self.wallet_addr,
+            url: 'https://blockchain.info/q/addressbalance/' + self.wallet_addr,
             success: function(total) {
+                if(total.length > 8) {
+                    var offset = total.length - 8;
+                    total = total.substr(0, offset) + '.' + total.substr(offset);
+                }
+
                 trigger('balance', xhr_total_parser(total));
             }
         });
